@@ -1,0 +1,55 @@
+{
+	"info": {
+		"_postman_id": "3ddacf6e-ad01-485c-9ce0-5c15115288ae",
+		"name": "JWT Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "29139232",
+		"_collection_link": "https://www.postman.com/telecoms-architect-90137201/workspace/api-test/collection/29139232-3ddacf6e-ad01-485c-9ce0-5c15115288ae?action=share&source=collection_link&creator=29139232"
+	},
+	"item": [
+		{
+			"name": "hello",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/hello",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"hello"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "jwt",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Access",
+						"value": "mykey",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/jwt",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"jwt"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
