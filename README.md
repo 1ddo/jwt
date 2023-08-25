@@ -14,15 +14,16 @@ Prerequisites
         ~~~
         CREATE ROLE goalert WITH LOGIN PASSWORD 'root';
 
-        CREATE DATABASE jwt_test;
+        # if a DB does not already exist then ...
+        CREATE DATABASE goalert;
 
-        GRANT ALL PRIVILEGES ON DATABASE jwt_test TO goalert;
+        GRANT ALL PRIVILEGES ON DATABASE goalert TO goalert;
 
         # If a DB already exists then you can grant access with...
         ALTER ROLE goalert CREATEDB;
 
         # For postgres 15+, you will also need to grant access to the public schema on the affected database
-        /connect jwt_test
+        \connect goalert                        # may be needed if you are connected to a different database
         GRANT ALL ON SCHEMA PUBLIC TO goalert;
         ~~~
 
