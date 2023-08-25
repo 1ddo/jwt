@@ -4,23 +4,25 @@ import (
 	"database/sql"
 
 	_ "github.com/lib/pq"
+	logr "github.com/sirupsen/logrus"
 )
 
 type Repository struct {
-	db *sql.DB
+	DB  *sql.DB
+	Log *logr.Logger
 }
 
-func NewRepo(db *sql.DB) *Repository {
+func NewRepository() *Repository {
 	return &Repository{
-		db: db,
+		Log: logr.New(),
 	}
 }
 
-func NewDBCon(connStr string) *sql.DB {
+func (r *Repository) SetDB(constr string) {
 	var err error
 	// must be transferred to config file
 	// connStr = "postgres://goalert:root@localhost/goalert?sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open("postgres", constr)
 
 	if err != nil {
 		panic(err)
@@ -30,14 +32,14 @@ func NewDBCon(connStr string) *sql.DB {
 		panic(err)
 	}
 
-	log.Info("Connection to database has been established.")
+	r.Log.Info("Connection to database has been established.")
 
-	return db
+	r.DB = db
 }
 
-func IsValidAPIUser(r *Repository, au string) bool {
+func (r *Repository) IsValidAPIUser(au string) bool {
 	qry := "SELECT * FROM goa_api_key WHERE api_user = $1 AND status = 'A'"
-	ps, err := r.db.Prepare(qry)
+	ps, err := r.DB.Prepare(qry)
 
 	if err != nil {
 		panic(err.Error())
