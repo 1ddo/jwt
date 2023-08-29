@@ -13,12 +13,6 @@ func HelloWithToken(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello World!")
 }
 
-func CheckError(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func main() {
 	j := NewJWT()
 	//log.SetFormatter(&log.JSONFormatter{})
@@ -34,6 +28,8 @@ func main() {
 
 	http.Handle("/hello", j.ValidateJWT(HelloWithToken))
 	http.HandleFunc("/jwt", j.GetJWT)
+	http.HandleFunc("/new/apikey", j.AddAPIKey)
+	http.HandleFunc("/apikeys", j.GetAPIKey)
 
 	http.ListenAndServe(":8080", nil)
 }

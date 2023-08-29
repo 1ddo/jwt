@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -27,7 +28,7 @@ type Token struct {
 
 func NewJWT() JWT {
 	return JWT{
-		SecretToken: []byte("$JWT SUPER SECRET TOKEN$"),
+		SecretToken: []byte("$JWT1SUPER2SECRET3TOKEN$"),
 		Log:         logr.New(),
 		Token: Token{
 			Token:     "",
@@ -156,4 +157,41 @@ func (j *JWT) GetJWT(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Not Authorized"))
 	}
+}
+
+func (j *JWT) AddAPIKey(w http.ResponseWriter, r *http.Request) {
+	ak := r.URL.Query().Get("api_key")
+
+	if strings.TrimSpace(ak) != "" {
+		if j.Repo.IsValidAPIUser(ak) {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("The API Key already exist. Please modify the API Key and try again."))
+		} else {
+			j.Log.Info("API KEY: " + ak)
+			j.Repo.AddAPIKey(&APIKey{
+				ApiKey:  ak,
+				ApiUser: "iddu", // to be replaced by actual user impl
+				Status:  "A",
+			})
+
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("The new API Key has been added."))
+		}
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("API Key Value Not Found"))
+	}
+}
+
+func (j *JWT) GetAPIKey(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusBadRequest)
+
+	js, err := json.Marshal(j.Repo.GetAllAPIKeys())
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	w.Write([]byte(js))
 }

@@ -50,6 +50,51 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "new/apikey",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/new/apikey?api_key=iddukey",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"new",
+						"apikey"
+					],
+					"query": [
+						{
+							"key": "api_key",
+							"value": "iddukey"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "apikeys",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/apikeys",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"apikeys"
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }
