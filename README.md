@@ -18,7 +18,7 @@ Prerequisites
     * Login as goalert (via sql client or using the command "psql -U goalert" command)
     * Run the following commands:
         ~~~
-        CREATE TABLE goa_api_key ( api_key VARCHAR PRIMARY KEY, api_user VARCHAR(100) NOT NULL UNIQUE, status VARCHAR(10) NOT NULL, created_time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP );
+        CREATE TABLE goa_api_key ( api_key VARCHAR PRIMARY KEY, api_user VARCHAR(100) NOT NULL, status VARCHAR(10) NOT NULL, created_time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP );
 
         INSERT INTO public.goa_api_key VALUES('gZKTbUDDZoA=', 'iddukey2', 'A');
         ~~~

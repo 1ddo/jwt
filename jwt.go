@@ -174,7 +174,6 @@ func (j *JWT) AddAPIKey(w http.ResponseWriter, r *http.Request) {
 				Status:  "A",
 			})
 
-			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("The new API Key has been added."))
 		}
 	} else {
@@ -184,8 +183,6 @@ func (j *JWT) AddAPIKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (j *JWT) GetAPIKey(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusBadRequest)
-
 	js, err := json.Marshal(j.Repo.GetAllAPIKeys())
 
 	if err != nil {

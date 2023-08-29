@@ -27,8 +27,6 @@ func NewRepository() *Repository {
 
 func (r *Repository) SetDB(constr string) {
 	var err error
-	// must be transferred to config file
-	// connStr = "postgres://goalert:root@localhost/goalert?sslmode=disable"
 	db, err := sql.Open("postgres", constr)
 
 	if err != nil {
