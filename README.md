@@ -8,11 +8,23 @@ Prerequisites
 * Install Postgres
     * Start postgres service
         * Using brew - "brew services start postgres@version"
+        * In Linux - `docker run --name jwt-postgres -e POSTGRES_PASSWORD=dbpass -d -p 5432:5432 postgres`
+            * The PostGres client can be installed with `sudo apt-get install -y postgresql-client` (on ubuntu)
     * Run the following SQL Commands (You can use any sql client or run "psql postgre" command)
         ~~~
         CREATE ROLE goalert WITH LOGIN PASSWORD 'root';
 
+        # if a DB does not already exist then ...
+        CREATE DATABASE goalert;
+
+        GRANT ALL PRIVILEGES ON DATABASE goalert TO goalert;
+
+        # If a DB already exists then you can grant access with...
         ALTER ROLE goalert CREATEDB;
+
+        # For postgres 15+, you will also need to grant access to the public schema on the affected database
+        \connect goalert                        # may be needed if you are connected to a different database
+        GRANT ALL ON SCHEMA PUBLIC TO goalert;
         ~~~
 
     * Login as goalert (via sql client or using the command "psql -U goalert" command)
