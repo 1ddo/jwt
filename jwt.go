@@ -116,9 +116,12 @@ func (j *JWT) GetJWT(w http.ResponseWriter, r *http.Request) {
 	if r.Header["Access"] != nil {
 		// get access key header
 		au := r.Header["Access"][0]
+		// get user
+		ak := r.URL.Query().Get("api_user")
+		akt := strings.TrimSpace(ak)
 		// validate Access key in header
-		j.Log.Info("Checking user key: " + au)
-		if j.Repo.IsValidAPIUser(au) {
+		j.Log.Info("Checking user key: " + akt)
+		if j.Repo.IsValidAPIUser(au, akt) {
 			_, ok := r.Header["Token-No-Expiry"]
 			j.Token.NoExpiry = ok // setting token to no expiry
 			t, err := j.CreateJWT()
@@ -160,17 +163,18 @@ func (j *JWT) GetJWT(w http.ResponseWriter, r *http.Request) {
 }
 
 func (j *JWT) AddAPIKey(w http.ResponseWriter, r *http.Request) {
+	au := r.URL.Query().Get("api_user")
 	ak := r.URL.Query().Get("api_key")
 
 	if strings.TrimSpace(ak) != "" {
-		if j.Repo.IsValidAPIUser(ak) {
+		if j.Repo.IsUserExist(au) {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("The API Key already exist. Please modify the API Key and try again."))
 		} else {
 			j.Log.Info("API KEY: " + ak)
 			j.Repo.AddAPIKey(&APIKey{
 				ApiKey:  ak,
-				ApiUser: "iddu", // to be replaced by actual user impl
+				ApiUser: au, // to be replaced by actual user impl
 				Status:  "A",
 			})
 

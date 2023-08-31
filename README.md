@@ -31,8 +31,6 @@ Prerequisites
     * Run the following commands:
         ~~~
         CREATE TABLE goa_api_key ( api_key VARCHAR PRIMARY KEY, api_user VARCHAR(100) NOT NULL, status VARCHAR(10) NOT NULL, created_time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP );
-
-        INSERT INTO public.goa_api_key VALUES('gZKTbUDDZoA=', 'iddukey2', 'A');
         ~~~
 
 1. Go to the project directory and run the following command:
@@ -45,13 +43,16 @@ Prerequisites
         * The "hello" will be used for testing the new token 
         * The "new/apikey" will be used for adding new api keys
         * THe "apikeys" will be used for retrieving existing api keys
-3. Open the "jwt" request. From the Headers tab, you'll see the "Access" and the "Token-No-Expiry" headers.
+3. Open the "new/apikey" request. From the url, make sure to add "?api_key=<your desired key>&api_user=<this is just a temp user. Any value would do.>
+4. Click the "Send" button and you'll see a response "The new API Key has been added." if it's succefull. Note remember your api_key and api_user as these information will be used for getting tokens.
+5. Open the "jwt" request. From the Headers tab, you'll see the "Access" and the "Token-No-Expiry" headers.
     * "Access" header is used for validating that the user is listed in the "goa_api_key" table as a valid user.
-        * Default Value: iddukey  
+        * Default Value: the api_key you entered when requesting a new api key  
     * "Token-No-Expiry" header is used as flag to tell the JWT request to be a non expirty token. Note that this is an optional header.
     If this header is not set, the Token is set to expired after 24hrs
         * Default Value: empty
-4. Click the "Send" button and you'll see a response "token" values or a "Not Authorized" value if user is not authorized/valid.
-5. Now, open the "hello" request. From the Header tab, you'll see the "Token" header. This header will be used for sending the token value from the "jwt" request.
-6. Click the "Send" button and you should be able to see a response "Hello World" value or "Not Authorized" if token is invalid.
+6. Add your api_user to the URL: ?api_user=<your api user>
+7. Click the "Send" button and you'll see a response "token" values or a "Not Authorized" value if user is not authorized/valid.
+8. Now, open the "hello" request. From the Header tab, you'll see the "Token" header. This header will be used for sending the token value from the "jwt" request.
+9. Click the "Send" button and you should be able to see a response "Hello World" value or "Not Authorized" if token is invalid.
 

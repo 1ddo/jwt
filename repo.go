@@ -2,14 +2,19 @@ package main
 
 import (
 	"database/sql"
+	"regexp"
+
+	"github.com/1ddo/jwt/keyring"
 
 	_ "github.com/lib/pq"
 	logr "github.com/sirupsen/logrus"
 )
 
 type Repository struct {
-	DB  *sql.DB
-	Log *logr.Logger
+	DB         *sql.DB
+	Log        *logr.Logger
+	Keys       keyring.Keys
+	SECRET_KEY string
 }
 
 type APIKey struct {
@@ -21,7 +26,9 @@ type APIKey struct {
 
 func NewRepository() *Repository {
 	return &Repository{
-		Log: logr.New(),
+		Log:        logr.New(),
+		SECRET_KEY: "Key137&*#!~c(8~=2?.?%b74",
+		Keys:       keyring.Keys{},
 	}
 }
 
@@ -50,16 +57,16 @@ func (r *Repository) AddAPIKey(ak *APIKey) {
 		panic("Error inserting API Key from DB: " + err.Error())
 	}
 
-	e := NewEncryption()
-	apk, err := e.Encrypt(ak.ApiKey)
+	apk, err := r.Keys.Encrypt("API USER KEY", []byte(ak.ApiKey))
+	apks := string(apk)
 
 	if err != nil {
 		panic("Error encrypting api key: " + err.Error())
 	}
 
-	ps.Exec(apk, ak.ApiUser, "A")
+	ps.Exec(apks, ak.ApiUser, "A")
 
-	r.Log.Info("API Key has been inserted: " + apk)
+	r.Log.Info("API Key has been inserted: " + apks)
 }
 
 func (r *Repository) RemoveAPIKey(ak string) {
@@ -84,7 +91,7 @@ func (r *Repository) GetAllAPIKeys() map[int]APIKey {
 	rows, err := ps.Query()
 	rc := 0
 
-	CheckError(err)
+	r.CheckError(err)
 
 	defer rows.Close()
 
@@ -97,7 +104,7 @@ func (r *Repository) GetAllAPIKeys() map[int]APIKey {
 		var created_time string
 
 		err = rows.Scan(&api_key, &api_user, &status, &created_time)
-		CheckError(err)
+		r.CheckError(err)
 
 		result[rc] = APIKey{
 			ApiKey:      api_key,
@@ -109,30 +116,23 @@ func (r *Repository) GetAllAPIKeys() map[int]APIKey {
 		rc++
 	}
 
-	CheckError(err)
+	r.CheckError(err)
 
 	return result
 }
 
-func (r *Repository) IsAPIKeyExist(ak string) bool {
-	qry := "SELECT * FROM goa_api_key WHERE api_key = $1 AND status = 'A'"
+func (r *Repository) IsUserExist(ak string) bool {
+	qry := "SELECT * FROM goa_api_key WHERE api_user = $1 AND status = 'A'"
 	ps, err := r.DB.Prepare(qry)
 
 	if err != nil {
 		panic("Error getting API Key info from DB: " + err.Error())
 	}
 
-	e := NewEncryption()
-	apk, err := e.Encrypt(ak)
-
-	if err != nil {
-		panic("Error encrypting api key: " + err.Error())
-	}
-
-	rows, err := ps.Query(apk)
+	rows, err := ps.Query(ak)
 	rc := 0
 
-	CheckError(err)
+	r.CheckError(err)
 
 	defer rows.Close()
 
@@ -143,35 +143,29 @@ func (r *Repository) IsAPIKeyExist(ak string) bool {
 		var created_time string
 
 		err = rows.Scan(&api_key, &api_user, &status, &created_time)
-		CheckError(err)
+		r.CheckError(err)
 
 		rc++
 	}
 
-	CheckError(err)
+	r.CheckError(err)
 
 	return rc > 0
 }
 
-func (r *Repository) IsValidAPIUser(au string) bool {
-	qry := "SELECT * FROM goa_api_key WHERE api_key = $1 AND status = 'A'"
+func (r *Repository) IsValidAPIUser(au string, uid string) bool {
+	qry := "SELECT * FROM goa_api_key WHERE api_user = $1 AND status = 'A'"
 	ps, err := r.DB.Prepare(qry)
 
 	if err != nil {
 		panic("Error getting API User info from DB: " + err.Error())
 	}
 
-	e := NewEncryption()
-	apk, err := e.Encrypt(au)
-
-	if err != nil {
-		panic("Error encrypting api key: " + err.Error())
-	}
-
-	rows, err := ps.Query(apk)
+	rows, err := ps.Query(uid)
 	rc := 0
+	var dbak []byte
 
-	CheckError(err)
+	r.CheckError(err)
 
 	defer rows.Close()
 
@@ -182,18 +176,34 @@ func (r *Repository) IsValidAPIUser(au string) bool {
 		var created_time string
 
 		err = rows.Scan(&api_key, &api_user, &status, &created_time)
-		CheckError(err)
+		r.CheckError(err)
+
+		r.Log.Info("API KEY FROM DB: " + api_key)
+		r.Log.Info("API KEY FROM DB TRIMED: " + r.TrimSpaceNewlineInString(api_key))
+
+		dbak, _, err = r.Keys.Decrypt([]byte(r.TrimSpaceNewlineInString(api_key)))
+
+		if err != nil {
+			panic("Error encrypting api key: " + err.Error())
+		}
 
 		rc++
 	}
 
-	CheckError(err)
+	r.CheckError(err)
+	r.Log.Info("Decrypted Key: " + string(dbak))
 
-	return rc > 0
+	return string(dbak) == au
 }
 
-func CheckError(err error) {
+func (r *Repository) CheckError(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (r *Repository) TrimSpaceNewlineInString(s string) string {
+	re := regexp.MustCompile(` +\r?\n +`)
+
+	return re.ReplaceAllString(s, " ")
 }
