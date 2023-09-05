@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -24,6 +26,7 @@ type Token struct {
 	IssuedAt  string
 	ExpiresAt string
 	NoExpiry  bool
+	User      string
 }
 
 func NewJWT() JWT {
@@ -39,6 +42,17 @@ func NewJWT() JWT {
 	}
 }
 
+/*
+  - Default: JWT is set to expire for a day
+    iss (issuer): Issuer of the JWT.
+    sub (subject): Subject of the JWT (the user).
+    aud (audience): The JWT intended recipient or audience.
+    exp (expiration time): The time the JWT expires.
+    nbf (not before policy): Identifies the time before which JWT can not be accepted into processing.
+    iat (issued at time): Identifies the time at which the JWT was issued. This can be used to establish the age of the JWT or the exact time the token was generated.
+    jti (JWT ID): Unique identifier; this can be used to prevent the JWT from being used more than once.
+    *
+*/
 func (j *JWT) CreateJWT() (Token, error) {
 	var nt Token
 	var et int64     // expiry time
@@ -55,11 +69,22 @@ func (j *JWT) CreateJWT() (Token, error) {
 		"IssuedAt":  ct,
 		"ExpiresAt": et,
 	}
-	t := jwt.NewWithClaims(jwt.SigningMethodHS256, mc)
 
-	// Default: JWT is set to expire for a day
+	t := jwt.NewWithClaims(jwt.SigningMethodHS256, mc)
 	c := t.Claims.(jwt.MapClaims)
+	// sample claims information
 	c["exp"] = et
+	c["iss"] = "JWT Golang POC Project"
+	c["sub"] = "Test JWT Golang"
+	c["aud"] = "Devs"
+	c["role"] = "Developer" // custom claims
+	c["usr"] = j.Token.User // custom claims
+	c["jti"] = j.GenerateRandomString(32)
+	c["nxp"] = j.Token.NoExpiry
+
+	if !j.Token.NoExpiry {
+		c["iat"] = ct
+	}
 
 	ts, err := t.SignedString(j.SecretToken)
 
@@ -76,11 +101,23 @@ func (j *JWT) CreateJWT() (Token, error) {
 	return nt, nil
 }
 
+func (j *JWT) GenerateRandomString(length int) string {
+	b := make([]byte, length)
+	_, err := rand.Read(b)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return base64.StdEncoding.EncodeToString(b)
+}
+
 func (j *JWT) ValidateJWT(next func(w http.ResponseWriter, r *http.Request)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		j.Log.Info("Token is being validated...")
 		if r.Header["Token"] != nil {
-			claims := jwt.MapClaims{}
-			token, err := jwt.ParseWithClaims(r.Header["Token"][0], &claims, func(t *jwt.Token) (interface{}, error) {
+			c := jwt.MapClaims{}
+			token, err := jwt.ParseWithClaims(r.Header["Token"][0], &c, func(t *jwt.Token) (interface{}, error) {
 				_, ok := t.Method.(*jwt.SigningMethodHMAC)
 
 				if !ok {
@@ -99,8 +136,20 @@ func (j *JWT) ValidateJWT(next func(w http.ResponseWriter, r *http.Request)) htt
 				w.WriteHeader(http.StatusUnauthorized)
 				w.Write([]byte("Not Authorized"))
 			}
+
 			// continue request if token is valid
 			if token != nil && token.Valid {
+				j.Log.Infof("JWT ID (jti): %s", c["jti"])
+				j.Log.Infof("User (usr): %s", c["usr"])
+				j.Log.Infof("Role (role): %s", c["role"])
+				j.Log.Infof("No Expiry (nxp): %t", c["nxp"])
+				j.Log.Infof("Expires At (exp): %f", c["exp"])
+				j.Log.Infof("Issuer (iss): %s", c["iss"])
+				j.Log.Infof("Subject (sub): %s", c["sub"])
+				j.Log.Infof("Audience (aud): %s", c["aud"])
+				j.Log.Infof("Not Before Policy) nbf: %f", c["nbf"])
+				j.Log.Infof("Issued At Time (iat): %f", c["iat"])
+
 				next(w, r)
 			}
 		} else {
@@ -124,6 +173,7 @@ func (j *JWT) GetJWT(w http.ResponseWriter, r *http.Request) {
 		if j.Repo.IsValidAPIUser(au, akt) {
 			_, ok := r.Header["Token-No-Expiry"]
 			j.Token.NoExpiry = ok // setting token to no expiry
+			j.Token.User = akt
 			t, err := j.CreateJWT()
 
 			if err != nil {
